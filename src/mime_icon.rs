@@ -125,6 +125,12 @@ pub fn parent_mime_types(mime: &Mime) -> Option<Vec<Mime>> {
     mime_icon_cache.shared_mime_info.get_parents_aliased(mime)
 }
 
+#[cfg(not(unix))]
+pub fn is_mime_subclass_of(mime_type: &Mime, base: &Mime) -> bool {
+    mime_type == base
+}
+
+#[cfg(unix)]
 pub fn is_mime_subclass_of(mime_type: &Mime, base: &Mime) -> bool {
     let mime_icon_cache = MIME_ICON_CACHE.lock().unwrap();
 

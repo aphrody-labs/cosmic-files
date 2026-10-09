@@ -8,7 +8,6 @@ pub use mime_guess::Mime;
 use notify_debouncer_full::notify;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::ffi::OsStr;
-use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock, atomic};
@@ -105,7 +104,7 @@ pub fn exec_to_command(
                         Some('c') => new_argument.push_str(entry_name),
                         Some('k') => {
                             if let Some(path) = entry_path {
-                                new_argument.push_str(path.as_os_str().as_bytes());
+                                new_argument.push_str(path.as_os_str().as_encoded_bytes());
                             }
                         }
 
@@ -117,7 +116,7 @@ pub fn exec_to_command(
                                 // TODO: files on remote file systems should be copied to a temporary local file.
                                 batch_process = true;
                                 field_code_used = true;
-                                new_argument.push_str(path.as_bytes());
+                                new_argument.push_str(path.as_encoded_bytes());
                             }
                         }
 
@@ -126,7 +125,7 @@ pub fn exec_to_command(
                             if !field_code_used && new_argument.is_empty() {
                                 field_code_used = true;
                                 for path in path_opt.iter().map(AsRef::as_ref) {
-                                    args.push(BString::new(path.as_bytes().to_owned()));
+                                    args.push(BString::new(path.as_encoded_bytes().to_owned()));
                                 }
                             }
                         }
