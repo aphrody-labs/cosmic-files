@@ -1812,7 +1812,7 @@ impl App {
                 nav_model = nav_model.insert(move |b| {
                     let b = b
                         .text(name.clone())
-                        .icon(icon::icon(icon::from_name("drive-harddisk-symbolic").size(16).handle()).size(16))
+                        .icon(icon::icon(tab::folder_icon_symbolic(&path, 16)).size(16))
                         .data(Location::Path(path.clone()));
                     if i == 0 { b.divider_above() } else { b }
                 });
