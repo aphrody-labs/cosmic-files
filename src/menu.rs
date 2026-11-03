@@ -207,6 +207,13 @@ pub fn context_menu<'a>(
                     children.push(menu::Item::Divider);
                     children.extend(action_items);
                 }
+                #[cfg(windows)]
+                {
+                    children.push(menu::Item::Divider);
+                    children.push(menu_item(fl!("windows-more-options"), Action::WindowsMenu));
+                    children.push(menu_item(fl!("show-in-explorer"), Action::ShowInExplorer));
+                    children.push(menu_item(fl!("windows-properties"), Action::WindowsProperties));
+                }
                 children.push(menu::Item::Divider);
                 if selected_mount_point == 0 {
                     children.push(menu_item(fl!("rename"), Action::Rename));

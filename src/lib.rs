@@ -30,6 +30,8 @@ mod mounter;
 mod mouse_area;
 pub mod operation;
 mod spawn_detached;
+#[cfg(windows)]
+mod windows_shell;
 pub mod tab;
 mod thumbnail_cacher;
 mod thumbnailer;

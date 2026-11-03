@@ -452,3 +452,9 @@ checksum = Somme de contrôle { $kind }
 sidebar-label = Libellé de la barre latérale
 search-application = Chercher par nom d'appli
 change-sidebar-label = Changer le libellé de la barre latérale
+
+## Bun OS : intégration à l'Explorateur Windows
+windows-more-options = Afficher plus d'options
+show-in-explorer = Afficher dans l'Explorateur
+windows-properties = Propriétés
+bunos-linux = Bun OS (Linux)

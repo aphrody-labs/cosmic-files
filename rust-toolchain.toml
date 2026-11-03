@@ -1,3 +1,6 @@
 [toolchain]
-channel = "1.93.0"
+# Bun OS: a toolchain new enough for the monorepo manifests (the Windows build links
+# bun-windows-winclean). Stable, not the monorepo nightly: nightly cargo's build-dir layout passes
+# one -L per build-script output and overflows the Windows command line for libcosmic.
+channel = "1.97.1"
 components = ["clippy", "rustfmt"]

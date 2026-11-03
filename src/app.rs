@@ -130,6 +130,12 @@ pub struct Flags {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
     About,
+    #[cfg(windows)]
+    WindowsMenu,
+    #[cfg(windows)]
+    WindowsProperties,
+    #[cfg(windows)]
+    ShowInExplorer,
     AddToSidebar,
     Compress,
     Copy,
@@ -203,6 +209,12 @@ impl Action {
     const fn message(&self, entity_opt: Option<Entity>) -> Message {
         match self {
             Self::About => Message::ToggleContextPage(ContextPage::About),
+            #[cfg(windows)]
+            Self::WindowsMenu => Message::WindowsMenu(entity_opt),
+            #[cfg(windows)]
+            Self::WindowsProperties => Message::WindowsProperties(entity_opt),
+            #[cfg(windows)]
+            Self::ShowInExplorer => Message::ShowInExplorer(entity_opt),
             Self::AddToSidebar => Message::AddToSidebar(entity_opt),
             Self::Compress => Message::Compress(entity_opt),
             Self::Copy => Message::Copy(entity_opt),
@@ -340,6 +352,12 @@ pub enum Message {
     Config(Config),
     Copy(Option<Entity>),
     CopyPath(Option<Entity>),
+    #[cfg(windows)]
+    WindowsMenu(Option<Entity>),
+    #[cfg(windows)]
+    WindowsProperties(Option<Entity>),
+    #[cfg(windows)]
+    ShowInExplorer(Option<Entity>),
     CopyTo(Option<Entity>),
     CopyToResult(DialogResult),
     CosmicSettings(&'static str),
@@ -1737,6 +1755,18 @@ impl App {
         }
     }
 
+    #[cfg(windows)]
+    fn windows_targets(&mut self, entity_opt: Option<Entity>) -> Vec<PathBuf> {
+        let mut paths: Vec<PathBuf> = self.selected_paths(entity_opt).collect();
+        if paths.is_empty() {
+            let entity = entity_opt.unwrap_or_else(|| self.tab_model.active());
+            if let Some(path) = self.tab_model.data::<Tab>(entity).and_then(|tab| tab.location.path_opt()) {
+                paths.push(path.clone());
+            }
+        }
+        paths
+    }
+
     fn update_nav_model(&mut self) {
         let mut nav_model = segmented_button::ModelBuilder::default();
 
@@ -1768,6 +1798,23 @@ impl App {
                             _ => Location::Path(path.clone()),
                         })
                         .data(FavoriteIndex(favorite_i))
+                });
+            }
+        }
+
+        #[cfg(windows)]
+        {
+            let mut places = crate::windows_shell::drives();
+            if let Some(root) = crate::windows_shell::bunos_linux_root() {
+                places.push((fl!("bunos-linux"), root));
+            }
+            for (i, (name, path)) in places.into_iter().enumerate() {
+                nav_model = nav_model.insert(move |b| {
+                    let b = b
+                        .text(name.clone())
+                        .icon(icon::icon(icon::from_name("drive-harddisk-symbolic").size(16).handle()).size(16))
+                        .data(Location::Path(path.clone()));
+                    if i == 0 { b.divider_above() } else { b }
                 });
             }
         }
@@ -2954,6 +3001,19 @@ impl Application for App {
                 let text = path_strings.join("\n");
                 return clipboard::write(text);
             }
+            #[cfg(windows)]
+            Message::WindowsMenu(entity_opt) => {
+                let paths: Vec<PathBuf> = self.windows_targets(entity_opt);
+                crate::windows_shell::context_menu(paths);
+            }
+            #[cfg(windows)]
+            Message::WindowsProperties(entity_opt) => {
+                crate::windows_shell::properties(self.windows_targets(entity_opt));
+            }
+            #[cfg(windows)]
+            Message::ShowInExplorer(entity_opt) => {
+                crate::windows_shell::reveal(self.windows_targets(entity_opt));
+            }
             Message::CopyTo(entity_opt) => {
                 let selected_paths: Box<[_]> = self.selected_paths(entity_opt).collect();
                 return self.copy_to(&selected_paths);
@@ -3727,6 +3787,15 @@ impl Application for App {
                     log::warn!("message did not contain notify watcher");
                 }
             },
+            #[cfg(windows)]
+            Message::OpenTerminal(entity_opt) if self.mime_app_cache.terminal().is_none() => {
+                let targets = self.windows_targets(entity_opt);
+                for dir in targets.iter().filter(|p| p.is_dir()) {
+                    if let Err(err) = crate::windows_shell::open_terminal(dir) {
+                        log::warn!("failed to open a terminal in {}: {}", dir.display(), err);
+                    }
+                }
+            }
             Message::OpenTerminal(entity_opt) => {
                 if let Some(terminal) = self.mime_app_cache.terminal() {
                     let mut paths = Box::from([]);
@@ -3833,6 +3902,14 @@ impl Application for App {
                 }
                 None => {}
             },
+            // Windows has no freedesktop handler database: use the Shell's own Open with dialog.
+            #[cfg(windows)]
+            Message::OpenWithDialog(entity_opt) => {
+                if let Some(path) = self.windows_targets(entity_opt).into_iter().next() {
+                    crate::windows_shell::open_with(path);
+                }
+            }
+            #[cfg(not(windows))]
             Message::OpenWithDialog(entity_opt) => {
                 let entity = entity_opt.unwrap_or_else(|| self.tab_model.active());
                 if let Some(tab) = self.tab_model.data::<Tab>(entity)

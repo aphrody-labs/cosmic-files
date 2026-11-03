@@ -125,6 +125,17 @@ pub fn parent_mime_types(mime: &Mime) -> Option<Vec<Mime>> {
     mime_icon_cache.shared_mime_info.get_parents_aliased(mime)
 }
 
+#[cfg(not(unix))]
+pub fn is_mime_subclass_of(mime_type: &Mime, base: &Mime) -> bool {
+    // No shared-mime-info database on Windows: exact match, wildcard subtype, and every text/*
+    // type as a subclass of text/plain (what the freedesktop database also declares).
+    mime_type == base
+        || (mime_type.type_() == base.type_()
+            && (base.subtype() == mime_guess::mime::STAR
+                || (base.type_() == mime_guess::mime::TEXT && base.subtype() == mime_guess::mime::PLAIN)))
+}
+
+#[cfg(unix)]
 pub fn is_mime_subclass_of(mime_type: &Mime, base: &Mime) -> bool {
     let mime_icon_cache = MIME_ICON_CACHE.lock().unwrap();
 
